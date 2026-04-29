@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Watch Video | Hindi Sub Studio</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <a href="index.html" class="logo">Hindi Sub <span>Studio</span></a>
+        <button onclick="history.back()" style="background:#333; color:white; padding:5px 15px; border:none; border-radius:5px; cursor:pointer;">Go Back</button>
+    </header>
+
+    <!-- Password Overlay -->
+    <div id="password-overlay" class="pass-overlay">
+        <h2 style="color: var(--primary); margin-bottom:10px;">🔒 Video is Locked!</h2>
+        <p style="color:#aaa; margin-bottom:20px;">Enter the Secret Password to watch.</p>
+        <input type="text" id="passInput" placeholder="Enter Password Here">
+        <button class="btn-action" style="background:var(--primary);" onclick="checkPassword()">Unlock Video</button>
+        <br>
+        <a href="https://t.me/hindisubinganime" target="_blank" style="color: #0088cc; text-decoration:none;">👉 Get Password from our Telegram</a>
+    </div>
+
+    <!-- Video Box -->
+    <div class="watch-container" id="watchBox" style="display: none;">
+        <div class="video-wrapper" id="vidPlayer">
+            <iframe id="liveFrame" src="" allowfullscreen></iframe>
+        </div>
+        <button class="btn-action" style="background:#333;" onclick="document.getElementById('vidPlayer').classList.toggle('zoomed')">🔍 Zoom In/Out</button>
+        
+        <div style="margin-top: 30px;">
+            <button class="btn-action" style="background: linear-gradient(45deg, #FFD700, #FFA500); color: black;" onclick="premiumDownload()">👑 Premium Download</button>
+            <button class="btn-action" style="background: #0088cc;" onclick="generateShortLink(this)">⬇️ Solve Shortener to Download</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD5wcGP9DyOXQ_QbVLTr7t7ZbL3FSsNr_0",
+            authDomain: "hindisubinganim.firebaseapp.com",
+            projectId: "hindisubinganim",
+            storageBucket: "hindisubinganim.firebasestorage.app",
+            messagingSenderId: "40724495461",
+            appId: "1:40724495461:web:d75a75cb6ac625a00c5a8c"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        const params = new URLSearchParams(window.location.search);
+        const epId = params.get("epid");
+        let episodeData = null;
+        let globalPass = "";
+        let shorteners = [];
+
+        async function initPage() {
+            const setSnap = await getDoc(doc(db, "settings", "main"));
+            if(setSnap.exists()){
+                globalPass = setSnap.data().videoPassword || "1234";
+                shorteners = setSnap.data().shorteners || [];
+            }
+
+            if(localStorage.getItem("site_vid_pass") === globalPass){
+                document.getElementById("password-overlay").style.display = "none";
+                document.getElementById("watchBox").style.display = "block";
+            }
+
+            const epSnap = await getDoc(doc(db, "episodes", epId));
+            if(epSnap.exists()){
+                episodeData = epSnap.data();
+                document.getElementById("liveFrame").src = episodeData.liveLink;
+            }
+        }
+
+        window.checkPassword = () => {
+            let val = document.getElementById("passInput").value;
+            if(val === globalPass){
+                localStorage.setItem("site_vid_pass", globalPass);
+                document.getElementById("password-overlay").style.display = "none";
+                document.getElementById("watchBox").style.display = "block";
+            } else { alert("Incorrect Password! Please check Telegram."); }
+        }
+
+        window.premiumDownload = () => {
+            let prem = localStorage.getItem("premium_valid_till");
+            if(prem && parseInt(prem) > Date.now()){
+                window.open(episodeData.dlLink, "_blank");
+            } else {
+                alert("Your Premium has expired or is not activated. Get token from Telegram.");
+            }
+        }
+
+        window.generateShortLink = async (btn) => {
+            if(!shorteners.length) return alert("System Error: Shortener not setup by Admin!");
+            btn.innerHTML = "Generating Link Please Wait...";
+            
+            let idx = parseInt(localStorage.getItem("shortIdx") || "0");
+            let currentApi = shorteners[idx % shorteners.length];
+            localStorage.setItem("shortIdx", idx + 1);
+
+            let uniqueUrl = episodeData.dlLink + "?uid=" + Math.floor(Date.now()/1000);
+            let apiUrl = `${currentApi.url}?api=${currentApi.key}&url=${encodeURIComponent(uniqueUrl)}&format=text`;
+
+            try {
+                let res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`);
+                let shortUrl = await res.text();
+                
+                if(shortUrl.startsWith("http")){
+                    const form = document.createElement('form');
+                    form.method = "GET"; form.action = shortUrl.trim(); form.target = "_blank";
+                    document.body.appendChild(form); form.submit(); document.body.removeChild(form);
+                } else { alert("Ad Network Error!"); }
+            } catch(e) { alert("Generation Failed. Try again."); }
+            btn.innerHTML = "⬇️ Solve Shortener to Download";
+        }
+
+        initPage();
+    </script>
+</body>
+</html>
