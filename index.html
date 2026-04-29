@@ -3,30 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hindi Sub Studio | Watch Free Anime & Movies</title>
+    <title>Hindi Sub Studio | Watch Free Anime, K-Drama & Series</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
-    <div id="sidebar" class="sidebar">
-        <button class="close-btn" onclick="toggleNav()">×</button>
-        <a href="https://t.me/hindisubanime_q" target="_blank">💬 Telegram Group</a>
-        <a href="https://t.me/hindisubinganime" target="_blank">📢 Telegram Channel</a>
-        <a href="#" onclick="applyPremium()">👑 Apply 28-Day Premium Token</a>
-    </div>
-
     <header>
-        <div class="logo">
-            <span style="font-size: 24px; cursor: pointer;" onclick="toggleNav()">☰</span> 
-            Hindi Sub <span>Studio</span>
+        <div class="header-left">
+            <a href="index.html" class="logo">Hindi Sub <span>Studio</span></a>
         </div>
+        
         <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Search Anime, Movies..." onkeyup="searchPosts()">
+            <input type="text" id="searchInput" placeholder="Search Series, Anime..." onkeyup="searchPosts()">
+            
+            <!-- Three Dots Menu -->
+            <div class="dropdown">
+                <button onclick="toggleDotsMenu()" class="dropbtn">⋮</button>
+                <div id="dotMenu" class="dropdown-content">
+                    <a href="javascript:void(0)" onclick="openAZ()"><i class="fas fa-sort-alpha-down"></i> A-Z List (0-9)</a>
+                    <a href="https://t.me/hindisubanime_q" target="_blank"><i class="fas fa-users"></i> Telegram Group</a>
+                    <a href="https://t.me/hindisubinganime" target="_blank"><i class="fas fa-bullhorn"></i> Telegram Channel</a>
+                    <a href="javascript:void(0)" onclick="applyPremium()"><i class="fas fa-crown"></i> 28-Days Premium</a>
+                </div>
+            </div>
         </div>
     </header>
 
-    <div class="az-container" id="azFilter">
-        <!-- Letters injected by JS -->
+    <!-- A-Z Modal Popup -->
+    <div id="azModal">
+        <div class="az-modal-content">
+            <span class="close-modal" onclick="closeAZ()">&times;</span>
+            <h3>Directory (A-Z & 0-9)</h3>
+            <div id="azButtonsBox"></div>
+        </div>
     </div>
 
     <div class="anime-grid" id="postGrid">
@@ -47,14 +57,24 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
         let allPosts = [];
 
-        window.toggleNav = () => {
-            const side = document.getElementById("sidebar");
-            side.style.width = side.style.width === "250px" ? "0" : "250px";
+        // Three Dots Menu Logic
+        window.toggleDotsMenu = () => {
+            document.getElementById("dotMenu").classList.toggle("show");
+        }
+        // Close dropdown if clicked outside
+        window.onclick = function(event) {
+            if (!event.target.matches('.dropbtn')) {
+                var dropdowns = document.getElementsByClassName("dropdown-content");
+                for (var i = 0; i < dropdowns.length; i++) {
+                    var openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) openDropdown.classList.remove('show');
+                }
+            }
         }
 
+        // Premium Logic
         window.applyPremium = () => {
             let token = prompt("Enter Premium Access Token:");
             if(token) {
@@ -64,19 +84,27 @@
             }
         }
 
-        // Generate A-Z Buttons
-        const azDiv = document.getElementById("azFilter");
+        // A-Z Logic
+        window.openAZ = () => { document.getElementById("azModal").style.display = "block"; }
+        window.closeAZ = () => { document.getElementById("azModal").style.display = "none"; }
+        
+        const azDiv = document.getElementById("azButtonsBox");
         azDiv.innerHTML += `<button class="az-btn" onclick="filterAZ('ALL')">All</button>`;
         "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(l => {
             azDiv.innerHTML += `<button class="az-btn" onclick="filterAZ('${l}')">${l}</button>`;
         });
 
+        window.filterAZ = (letter) => {
+            closeAZ();
+            if(letter === 'ALL') return displayPosts(allPosts);
+            displayPosts(allPosts.filter(p => p.name.toUpperCase().startsWith(letter)));
+        }
+
+        // Load Posts
         async function loadPosts() {
             const snap = await getDocs(collection(db, "posts"));
             allPosts = [];
             snap.forEach(doc => allPosts.push({ id: doc.id, ...doc.data() }));
-            
-            // Sort by latest
             allPosts.sort((a,b) => b.timestamp - a.timestamp);
             displayPosts(allPosts);
         }
@@ -103,11 +131,6 @@
         window.searchPosts = () => {
             let val = document.getElementById("searchInput").value.toLowerCase();
             displayPosts(allPosts.filter(p => p.name.toLowerCase().includes(val)));
-        }
-
-        window.filterAZ = (letter) => {
-            if(letter === 'ALL') return displayPosts(allPosts);
-            displayPosts(allPosts.filter(p => p.name.toUpperCase().startsWith(letter)));
         }
 
         loadPosts();
