@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hindi Sub Studio | Watch Free Anime & Movies</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="sidebar" class="sidebar">
+        <button class="close-btn" onclick="toggleNav()">×</button>
+        <a href="https://t.me/hindisubanime_q" target="_blank">💬 Telegram Group</a>
+        <a href="https://t.me/hindisubinganime" target="_blank">📢 Telegram Channel</a>
+        <a href="#" onclick="applyPremium()">👑 Apply 28-Day Premium Token</a>
+    </div>
+
+    <header>
+        <div class="logo">
+            <span style="font-size: 24px; cursor: pointer;" onclick="toggleNav()">☰</span> 
+            Hindi Sub <span>Studio</span>
+        </div>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search Anime, Movies..." onkeyup="searchPosts()">
+        </div>
+    </header>
+
+    <div class="az-container" id="azFilter">
+        <!-- Letters injected by JS -->
+    </div>
+
+    <div class="anime-grid" id="postGrid">
+        <h2 style="text-align: center; width: 100%; color: var(--primary);">Loading Content...</h2>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD5wcGP9DyOXQ_QbVLTr7t7ZbL3FSsNr_0",
+            authDomain: "hindisubinganim.firebaseapp.com",
+            projectId: "hindisubinganim",
+            storageBucket: "hindisubinganim.firebasestorage.app",
+            messagingSenderId: "40724495461",
+            appId: "1:40724495461:web:d75a75cb6ac625a00c5a8c"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let allPosts = [];
+
+        window.toggleNav = () => {
+            const side = document.getElementById("sidebar");
+            side.style.width = side.style.width === "250px" ? "0" : "250px";
+        }
+
+        window.applyPremium = () => {
+            let token = prompt("Enter Premium Access Token:");
+            if(token) {
+                let expiry = Date.now() + (28 * 24 * 60 * 60 * 1000); 
+                localStorage.setItem("premium_valid_till", expiry);
+                alert("Premium Activated for 28 Days! Direct Download Unlocked.");
+            }
+        }
+
+        // Generate A-Z Buttons
+        const azDiv = document.getElementById("azFilter");
+        azDiv.innerHTML += `<button class="az-btn" onclick="filterAZ('ALL')">All</button>`;
+        "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(l => {
+            azDiv.innerHTML += `<button class="az-btn" onclick="filterAZ('${l}')">${l}</button>`;
+        });
+
+        async function loadPosts() {
+            const snap = await getDocs(collection(db, "posts"));
+            allPosts = [];
+            snap.forEach(doc => allPosts.push({ id: doc.id, ...doc.data() }));
+            
+            // Sort by latest
+            allPosts.sort((a,b) => b.timestamp - a.timestamp);
+            displayPosts(allPosts);
+        }
+
+        window.displayPosts = (data) => {
+            const grid = document.getElementById("postGrid");
+            grid.innerHTML = "";
+            if(data.length === 0) return grid.innerHTML = "<h3 style='color:white;text-align:center;width:100%;'>No content found.</h3>";
+
+            data.forEach(post => {
+                grid.innerHTML += `
+                    <div class="anime-card" onclick="window.location.href='detail.html?id=${post.id}'">
+                        <div class="badge">${post.category}</div>
+                        <img src="${post.image}" alt="${post.name}">
+                        <div class="anime-info">
+                            <h4>${post.name}</h4>
+                            <span class="genre-tag">${post.genre}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        window.searchPosts = () => {
+            let val = document.getElementById("searchInput").value.toLowerCase();
+            displayPosts(allPosts.filter(p => p.name.toLowerCase().includes(val)));
+        }
+
+        window.filterAZ = (letter) => {
+            if(letter === 'ALL') return displayPosts(allPosts);
+            displayPosts(allPosts.filter(p => p.name.toUpperCase().startsWith(letter)));
+        }
+
+        loadPosts();
+    </script>
+</body>
+</html>
