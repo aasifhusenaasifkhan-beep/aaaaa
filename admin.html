@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Secure Admin Panel - Hindi Sub Studio</title>
+    <style>
+        body { font-family: Arial; background: #111; color: white; padding: 20px; margin: 0; }
+        
+        /* LOGIN SCREEN */
+        #loginScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
+        #loginScreen input { padding: 12px; margin: 10px 0; width: 280px; border-radius: 5px; border: none; font-size: 16px; text-align: center; background: #222; color: white; border: 1px solid #444;}
+        #loginScreen button { background: #e50914; color: white; padding: 12px 20px; border: none; cursor: pointer; border-radius: 5px; width: 280px; font-weight: bold; font-size: 16px; margin-top: 10px;}
+        
+        /* ADMIN PANEL UI */
+        #adminPanel { display: none; }
+        .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;}
+        .logout-btn { background: #555; padding: 8px 15px; border: none; color: white; border-radius: 5px; cursor: pointer;}
+        .tab-btn { background: #333; color: white; padding: 10px 20px; border: none; cursor: pointer; margin-right: 5px; border-radius: 5px; }
+        .tab-btn.active { background: #e50914; }
+        .panel { display: none; background: #222; padding: 20px; margin-top: 15px; border-radius: 8px; }
+        .panel.active { display: block; }
+        input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; background: #333; color: white; border: 1px solid #444; border-radius: 5px; box-sizing: border-box;}
+        button.action-btn { background: #e50914; color: white; padding: 12px 20px; border: none; cursor: pointer; border-radius: 5px; width: 100%; font-weight: bold; margin-top: 10px;}
+    </style>
+</head>
+<body>
+
+    <!-- SECURE LOGIN SCREEN -->
+    <div id="loginScreen">
+        <h2 style="color: #e50914;">Admin Login</h2>
+        <input type="email" id="adminEmail" placeholder="Enter Admin Email">
+        <input type="password" id="adminPass" placeholder="Enter Admin Password">
+        <button id="loginBtn" onclick="loginAdmin()">Login to Dashboard</button>
+    </div>
+
+    <!-- MAIN ADMIN PANEL -->
+    <div id="adminPanel">
+        <div class="header-bar">
+            <h2>Control Panel</h2>
+            <button class="logout-btn" onclick="logoutAdmin()">Logout</button>
+        </div>
+        
+        <div>
+            <button class="tab-btn active" onclick="switchTab('addPost')">Add Post</button>
+            <button class="tab-btn" onclick="switchTab('addEp')">Add Episode</button>
+            <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+        </div>
+
+        <!-- ADD POST SECTION -->
+        <div id="addPost" class="panel active">
+            <h3 style="color: #e50914;">1. Create New Post</h3>
+            <label>Upload Poster (Image):</label>
+            <input type="file" id="postImage" accept="image/*">
+            <select id="postCat">
+                <option value="Anime Hindi Sub">Anime Hindi Sub</option>
+                <option value="Anime Dub">Anime Dub</option>
+                <option value="K-Drama">K-Drama</option>
+                <option value="Donghua">Donghua</option>
+                <option value="Movie">Movie</option>
+            </select>
+            <input type="text" id="postName" placeholder="Post Name (e.g. Naruto)">
+            <input type="text" id="postDate" placeholder="Release Year (e.g. 2024)">
+            <input type="text" id="postGenre" placeholder="Genre (e.g. Action, Comedy)">
+            <textarea id="postStory" rows="4" placeholder="Story Summary..."></textarea>
+            <button class="action-btn" onclick="savePost()">Save Post</button>
+        </div>
+
+        <!-- ADD EPISODE SECTION -->
+        <div id="addEp" class="panel">
+            <h3 style="color: #e50914;">2. Add Episode</h3>
+            <label>Select Post:</label>
+            <select id="epPostSelect"><option>Loading Posts...</option></select>
+            <input type="number" id="epNum" placeholder="Episode Number (e.g. 1)">
+            <input type="text" id="epLive" placeholder="Live Video Link (Vidhide/Streamtape etc)">
+            <input type="text" id="epDl" placeholder="Direct Download Link (Gdrive/Mega etc)">
+            <button class="action-btn" onclick="saveEpisode()">Save Episode</button>
+        </div>
+
+        <!-- SETTINGS SECTION -->
+        <div id="settings" class="panel">
+            <h3 style="color: #e50914;">3. Site Settings</h3>
+            <label>Video Unlock Password (For Users):</label>
+            <input type="text" id="setPass" placeholder="e.g. Anime@123">
+            
+            <h4 style="margin-top:20px;">Shortener APIs (Auto Rotation)</h4>
+            <input type="text" id="s1url" placeholder="API 1 URL (e.g. https://shrinkme.io/api)">
+            <input type="text" id="s1key" placeholder="API 1 KEY">
+            <input type="text" id="s2url" placeholder="API 2 URL">
+            <input type="text" id="s2key" placeholder="API 2 KEY">
+            <button class="action-btn" onclick="saveSettings()">Save Settings</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // AAPKA FIREBASE CONFIG YAHAN DALEIN 👇
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD5wcGP9DyOXQ_QbVLTr7t7ZbL3FSsNr_0",
+            authDomain: "hindisubinganim.firebaseapp.com",
+            projectId: "hindisubinganim",
+            storageBucket: "hindisubinganim.firebasestorage.app",
+            messagingSenderId: "40724495461",
+            appId: "1:40724495461:web:d75a75cb6ac625a00c5a8c"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // --- AUTHENTICATION LOGIC ---
+        // Check if user is already logged in
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById("loginScreen").style.display = "none";
+                document.getElementById("adminPanel").style.display = "block";
+                loadPostsForSelect();
+                loadSettings();
+            } else {
+                document.getElementById("loginScreen").style.display = "flex";
+                document.getElementById("adminPanel").style.display = "none";
+            }
+        });
+
+        // Login Function
+        window.loginAdmin = () => {
+            let email = document.getElementById("adminEmail").value;
+            let pass = document.getElementById("adminPass").value;
+            let btn = document.getElementById("loginBtn");
+            btn.innerHTML = "Logging in...";
+            
+            signInWithEmailAndPassword(auth, email, pass)
+            .then((userCredential) => {
+                btn.innerHTML = "Login to Dashboard";
+            })
+            .catch((error) => {
+                alert("Login Failed: " + error.message);
+                btn.innerHTML = "Login to Dashboard";
+            });
+        }
+
+        // Logout Function
+        window.logoutAdmin = () => {
+            signOut(auth).then(() => {
+                alert("Logged out successfully!");
+            });
+        }
+
+        // --- TAB SWITCH LOGIC ---
+        window.switchTab = (id) => {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // --- CLOUDINARY UPLOAD LOGIC ---
+        async function uploadImage(file) {
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("upload_preset", "asi_anime_upload"); 
+            let res = await fetch("https://api.cloudinary.com/v1_1/dccbzyjtr/image/upload", {
+                method: "POST", body: formData
+            });
+            let data = await res.json();
+            return data.secure_url; 
+        }
+
+        // --- SAVE POST ---
+        window.savePost = async () => {
+            let file = document.getElementById("postImage").files[0];
+            if(!file) return alert("Please select an image!");
+            
+            alert("Uploading Image... Please Wait.");
+            try {
+                let imgUrl = await uploadImage(file);
+                await addDoc(collection(db, "posts"), {
+                    category: document.getElementById("postCat").value,
+                    name: document.getElementById("postName").value,
+                    releaseDate: document.getElementById("postDate").value,
+                    genre: document.getElementById("postGenre").value,
+                    story: document.getElementById("postStory").value,
+                    image: imgUrl,
+                    timestamp: Date.now()
+                });
+                alert("Post Saved Successfully! 🎉");
+                loadPostsForSelect();
+            } catch(e) {
+                alert("Error saving post! Make sure you are logged in.");
+                console.error(e);
+            }
+        }
+
+        // --- LOAD POSTS FOR EPISODE ---
+        async function loadPostsForSelect() {
+            try {
+                const snap = await getDocs(collection(db, "posts"));
+                let html = "";
+                snap.forEach(doc => {
+                    html += `<option value="${doc.id}">${doc.data().name}</option>`;
+                });
+                document.getElementById("epPostSelect").innerHTML = html || "<option>No posts available</option>";
+            } catch(e) {}
+        }
+
+        // --- SAVE EPISODE ---
+        window.saveEpisode = async () => {
+            try {
+                await addDoc(collection(db, "episodes"), {
+                    postId: document.getElementById("epPostSelect").value,
+                    epNum: document.getElementById("epNum").value,
+                    liveLink: document.getElementById("epLive").value,
+                    dlLink: document.getElementById("epDl").value
+                });
+                alert("Episode Added Successfully! 🎬");
+            } catch(e) {
+                alert("Error adding episode! Check your login.");
+            }
+        }
+
+        // --- SAVE SETTINGS ---
+        window.saveSettings = async () => {
+            let shorteners = [];
+            if(document.getElementById("s1url").value) shorteners.push({url: document.getElementById("s1url").value, key: document.getElementById("s1key").value});
+            if(document.getElementById("s2url").value) shorteners.push({url: document.getElementById("s2url").value, key: document.getElementById("s2key").value});
+            
+            try {
+                await setDoc(doc(db, "settings", "main"), {
+                    videoPassword: document.getElementById("setPass").value,
+                    shorteners: shorteners
+                });
+                alert("Settings Updated! ⚙️");
+            } catch(e) {
+                alert("Error saving settings!");
+            }
+        }
+
+        // --- LOAD SETTINGS ---
+        async function loadSettings() {
+            try {
+                const snap = await getDoc(doc(db, "settings", "main"));
+                if(snap.exists()) {
+                    let d = snap.data();
+                    document.getElementById("setPass").value = d.videoPassword || "";
+                    if(d.shorteners && d.shorteners[0]) { document.getElementById("s1url").value = d.shorteners[0].url; document.getElementById("s1key").value = d.shorteners[0].key; }
+                    if(d.shorteners && d.shorteners[1]) { document.getElementById("s2url").value = d.shorteners[1].url; document.getElementById("s2key").value = d.shorteners[1].key; }
+                }
+            } catch(e) {}
+        }
+    </script>
+</body>
+</html>
