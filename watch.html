@@ -11,7 +11,6 @@
         <button onclick="history.back()" style="background:#333; color:white; padding:5px 15px; border:none; border-radius:5px; cursor:pointer;">Go Back</button>
     </header>
 
-    <!-- Password Overlay -->
     <div id="password-overlay" class="pass-overlay">
         <h2 style="color: var(--primary); margin-bottom:10px;">🔒 Video is Locked!</h2>
         <p style="color:#aaa; margin-bottom:20px;">Enter the Secret Password to watch.</p>
@@ -21,7 +20,6 @@
         <a href="https://t.me/hindisubinganime" target="_blank" style="color: #0088cc; text-decoration:none;">👉 Get Password from our Telegram</a>
     </div>
 
-    <!-- Video Box -->
     <div class="watch-container" id="watchBox" style="display: none;">
         <div class="video-wrapper" id="vidPlayer">
             <iframe id="liveFrame" src="" allowfullscreen></iframe>
@@ -30,7 +28,7 @@
         
         <div style="margin-top: 30px;">
             <button class="btn-action" style="background: linear-gradient(45deg, #FFD700, #FFA500); color: black;" onclick="premiumDownload()">👑 Premium Download</button>
-            <button class="btn-action" style="background: #0088cc;" onclick="generateShortLink(this)">⬇️ Solve Shortener to Download</button>
+            <button class="btn-action" style="background: #0088cc;" id="shortBtn" onclick="generateShortLink(this)">⬇️ Solve Shortener to Download</button>
         </div>
     </div>
 
@@ -92,6 +90,13 @@
             }
         }
 
+        // ORIGINAL ANTI-BYPASS SYSTEM FROM YOUR OLD FILE
+        function makeUniqueUrl(original) {
+            const dailyId = Math.floor(Date.now() / 86400000); // changes every 24 hours
+            const separator = original.includes('?') ? '&' : '?';
+            return original + separator + "asi_uid=" + dailyId;
+        }
+
         window.generateShortLink = async (btn) => {
             if(!shorteners.length) return alert("System Error: Shortener not setup by Admin!");
             btn.innerHTML = "Generating Link Please Wait...";
@@ -100,20 +105,36 @@
             let currentApi = shorteners[idx % shorteners.length];
             localStorage.setItem("shortIdx", idx + 1);
 
-            let uniqueUrl = episodeData.dlLink + "?uid=" + Math.floor(Date.now()/1000);
-            let apiUrl = `${currentApi.url}?api=${currentApi.key}&url=${encodeURIComponent(uniqueUrl)}&format=text`;
+            const bypassedUniqueLink = makeUniqueUrl(episodeData.dlLink);
+            const apiUrl = `${currentApi.url}?api=${currentApi.key}&url=${encodeURIComponent(bypassedUniqueLink)}&format=text`;
 
             try {
-                let res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`);
-                let shortUrl = await res.text();
-                
-                if(shortUrl.startsWith("http")){
+                let finalShortLink = null;
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
+                const response = await fetch(proxyUrl);
+                const textData = await response.text();
+
+                if (textData && (textData.trim().startsWith("http://") || textData.trim().startsWith("https://"))) {
+                    finalShortLink = textData.trim();
+                }
+
+                if (finalShortLink) {
+                    // Form Post Method hides the HTTP Referrer from Ad Networks
                     const form = document.createElement('form');
-                    form.method = "GET"; form.action = shortUrl.trim(); form.target = "_blank";
-                    document.body.appendChild(form); form.submit(); document.body.removeChild(form);
-                } else { alert("Ad Network Error!"); }
-            } catch(e) { alert("Generation Failed. Try again."); }
-            btn.innerHTML = "⬇️ Solve Shortener to Download";
+                    form.method = "GET";
+                    form.action = finalShortLink;
+                    form.target = "_blank";
+                    document.body.appendChild(form);
+                    form.submit();
+                    document.body.removeChild(form);
+                } else {
+                    alert("Ad Network Error! Please try again.");
+                }
+            } catch(e) { 
+                alert("Generation Failed. Network Issue."); 
+            } finally {
+                btn.innerHTML = "⬇️ Solve Shortener to Download";
+            }
         }
 
         initPage();
