@@ -42,11 +42,12 @@
             <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
         </div>
 
+        <!-- Add Post (Input for Category instead of select) -->
         <div id="addPost" class="panel active">
             <h3 style="color:#e50914;">Create New Post</h3>
             <label>Upload Poster Image:</label>
             <input type="file" id="postImage" accept="image/*">
-            <select id="postCat"><option>Anime Hindi Sub</option><option>Anime Dub</option><option>K-Drama</option><option>Donghua</option><option>Movie</option></select>
+            <input type="text" id="postCat" placeholder="Category (e.g. Anime Hindi Sub, Web Series)">
             <input type="text" id="postName" placeholder="Post Name (e.g. Naruto)">
             <input type="text" id="postDate" placeholder="Release Year (e.g. 2024)">
             <input type="text" id="postGenre" placeholder="Genre (e.g. Action, Comedy)">
@@ -54,8 +55,10 @@
             <button class="action-btn" onclick="savePost()">Upload & Save Post</button>
         </div>
 
+        <!-- Add Episode (Search Box Added) -->
         <div id="addEp" class="panel">
             <h3 style="color:#e50914;">Add Episode</h3>
+            <input type="text" id="searchPost" placeholder="🔍 Search Post Name here..." onkeyup="filterAdminPosts()" style="background:#111; border-color:var(--primary);">
             <select id="epPostSelect"><option>Loading Posts...</option></select>
             <input type="number" id="epNum" placeholder="Episode Number (e.g. 1)">
             <input type="text" id="epLive" placeholder="Live Video Link (Vidhide/Streamtape)">
@@ -84,7 +87,6 @@
     </div>
 
     <script type="module">
-        // AAPKA FIREBASE CONFIG YAHAN HAI
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
@@ -100,6 +102,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        
+        let allAdminPosts = [];
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -151,9 +155,23 @@
         }
 
         async function loadPostsForSelect() {
-            const snap = await getDocs(collection(db, "posts")); let html = "";
-            snap.forEach(doc => html += `<option value="${doc.id}">${doc.data().name}</option>`);
-            document.getElementById("epPostSelect").innerHTML = html || "<option>No posts</option>";
+            const snap = await getDocs(collection(db, "posts")); 
+            allAdminPosts = [];
+            snap.forEach(doc => allAdminPosts.push({id: doc.id, name: doc.data().name}));
+            renderSelectBox(allAdminPosts);
+        }
+
+        function renderSelectBox(arr) {
+            let html = "";
+            arr.forEach(p => html += `<option value="${p.id}">${p.name}</option>`);
+            document.getElementById("epPostSelect").innerHTML = html || "<option>No posts found</option>";
+        }
+
+        // Search Filter function for Add Episode
+        window.filterAdminPosts = () => {
+            let q = document.getElementById("searchPost").value.toLowerCase();
+            let filtered = allAdminPosts.filter(p => p.name.toLowerCase().includes(q));
+            renderSelectBox(filtered);
         }
 
         window.saveEpisode = async () => {
