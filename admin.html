@@ -12,7 +12,7 @@
         .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;}
         .tab-btn { background: #333; color: white; padding: 10px 20px; border: none; cursor: pointer; margin-right: 5px; border-radius: 5px; font-weight: bold;}
         .tab-btn.active { background: #e50914; }
-        .panel { display: none; background: #222; padding: 20px; margin-top: 15px; border-radius: 8px; }
+        .panel { display: none; background: #222; padding: 20px; margin-top: 15px; border-radius: 8px; border: 1px solid #333;}
         .panel.active { display: block; }
         input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; background: #333; color: white; border: 1px solid #444; border-radius: 5px; box-sizing: border-box;}
         button.action-btn { background: #e50914; color: white; padding: 12px 20px; border: none; cursor: pointer; border-radius: 5px; width: 100%; font-weight: bold; margin-top: 10px; font-size: 15px;}
@@ -23,7 +23,7 @@
 </head>
 <body>
 
-    <!-- LOGIN SCREEN -->
+    <!-- SECURE LOGIN SCREEN -->
     <div id="loginScreen">
         <h2 style="color: #e50914;">Admin Login</h2>
         <input type="email" id="adminEmail" placeholder="Enter Admin Email">
@@ -48,13 +48,17 @@
         <!-- 1. ADD POST -->
         <div id="addPost" class="panel active">
             <h3 style="color:#e50914; margin-top: 0;">Create New Post</h3>
-            <label>Upload Poster Image (Cloudinary):</label>
+            
+            <label style="color:#aaa; font-size: 14px;">1. Upload Poster Image:</label>
             <input type="file" id="postImage" accept="image/*">
-            <input type="text" id="postCat" placeholder="Category (e.g. Anime Hindi Sub, Web Series, Donghua)">
+            
+            <label style="color:#aaa; font-size: 14px; margin-top: 10px; display: block;">2. Post Details:</label>
+            <input type="text" id="postCat" placeholder="Category (e.g. Anime Hindi Sub, Web Series)">
             <input type="text" id="postName" placeholder="Post Name (e.g. Naruto)">
             <input type="text" id="postDate" placeholder="Release Year (e.g. 2024)">
             <input type="text" id="postGenre" placeholder="Genre (e.g. Action, Comedy)">
             <textarea id="postStory" rows="3" placeholder="Story Summary..."></textarea>
+            
             <button class="action-btn" id="savePostBtn" onclick="savePost()">Upload Image & Save Post</button>
         </div>
 
@@ -66,7 +70,7 @@
             <input type="number" id="epNum" placeholder="Episode Number (e.g. 1)">
             <input type="text" id="epLive" placeholder="Live Video Link (Vidhide/Streamtape)">
             <input type="text" id="epDl" placeholder="Direct Download Link">
-            <button class="action-btn" onclick="saveEpisode()">Save Episode</button>
+            <button class="action-btn" id="saveEpBtn" onclick="saveEpisode()">Save Episode</button>
         </div>
 
         <!-- 3. DELETE POSTS -->
@@ -96,7 +100,7 @@
         import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 
-        // Firebase Config (Added Correctly)
+        // AAPKA FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyD5wcGP9DyOXQ_QbVLTr7t7ZbL3FSsNr_0",
             authDomain: "hindisubinganim.firebaseapp.com",
@@ -111,7 +115,7 @@
         
         let allAdminPosts = [];
 
-        // --- LOGIN & AUTH CHECK ---
+        // --- AUTH CHECK ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById("loginScreen").style.display = "none";
@@ -128,13 +132,12 @@
             let pass = document.getElementById("adminPass").value;
             document.getElementById("loginBtn").innerHTML = "Checking...";
             signInWithEmailAndPassword(auth, email, pass).catch((error) => {
-                alert("❌ Login Failed! Password ya Email galat hai."); 
+                alert("❌ Login Failed! Email ya Password galat hai."); 
                 document.getElementById("loginBtn").innerHTML = "Login to Dashboard";
             });
         }
         window.logoutAdmin = () => signOut(auth);
 
-        // --- TAB SWITCHER ---
         window.switchTab = (id) => {
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -142,76 +145,80 @@
             event.target.classList.add('active');
         }
 
-        // --- CLOUDINARY UPLOAD LOGIC (FIXED) ---
+
+        // ==========================================
+        // 🔥 CLOUDINARY & FIREBASE UPLOAD FIX 🔥
+        // ==========================================
         window.savePost = async () => {
-            let file = document.getElementById("postImage").files[0];
+            let fileInput = document.getElementById("postImage");
+            let file = fileInput.files[0];
             let name = document.getElementById("postName").value;
             let btn = document.getElementById("savePostBtn");
 
-            if(!file) return alert("❌ Please select a Poster Image!");
-            if(name.trim() === "") return alert("❌ Please enter Post Name!");
+            // Validation
+            if(!file) return alert("❌ Pehle Image select karein!");
+            if(name.trim() === "") return alert("❌ Pehle Post ka Naam dalein!");
 
-            // Button Disable kar diya taaki double click na ho
             btn.innerHTML = "⏳ 1. Uploading Image to Cloudinary...";
             btn.disabled = true;
 
-            let imgUrl = "";
-
-            // STEP 1: Upload Image
             try {
+                // STEP 1: CLOUDINARY UPLOAD (Aapki details ke sath)
                 const formData = new FormData(); 
                 formData.append("file", file); 
-                formData.append("upload_preset", "asi_anime_upload"); 
+                formData.append("upload_preset", "asi_anime_upload"); // AAPKA PRESET
                 
+                // AAPKA CLOUDINARY URL
                 let res = await fetch("https://api.cloudinary.com/v1_1/dccbzyjtr/image/upload", { 
                     method: "POST", 
                     body: formData 
                 });
+                
                 let data = await res.json(); 
                 
                 if(data.error) {
-                    alert("❌ Cloudinary Error: " + data.error.message + "\nCheck if preset is 'Unsigned'.");
+                    alert("❌ Cloudinary Error: " + data.error.message);
                     btn.innerHTML = "Upload Image & Save Post";
                     btn.disabled = false;
                     return;
                 }
-                imgUrl = data.secure_url; 
-            } catch(e) { 
-                alert("❌ Image Upload Failed! Network issue ya Adblocker on hai."); 
-                btn.innerHTML = "Upload Image & Save Post";
-                btn.disabled = false;
-                return;
-            }
 
-            // STEP 2: Save to Firebase Database
-            btn.innerHTML = "⏳ 2. Saving to Database...";
-            try {
+                // Image live link mil gayi
+                let imgUrl = data.secure_url; 
+
+                // STEP 2: FIREBASE DATABASE SAVE
+                btn.innerHTML = "⏳ 2. Saving Data to Firebase...";
+                
                 await addDoc(collection(db, "posts"), {
                     category: document.getElementById("postCat").value || "General", 
                     name: document.getElementById("postName").value,
                     releaseDate: document.getElementById("postDate").value || "", 
                     genre: document.getElementById("postGenre").value || "",
                     story: document.getElementById("postStory").value || "", 
-                    image: imgUrl, 
+                    image: imgUrl, // Yahan image save ho rahi hai
                     timestamp: Date.now()
                 });
                 
-                alert("✅ Post Saved Successfully!"); 
+                alert("✅ Success! Image Uploaded & Post Saved!"); 
                 
                 // Form clear karna
-                document.getElementById("postImage").value = "";
+                fileInput.value = ""; 
                 document.getElementById("postName").value = "";
                 document.getElementById("postStory").value = "";
                 
                 loadPostsForSelect(); 
                 loadPostsForManage();
+                
             } catch(e) { 
-                alert("❌ Firebase Error: " + e.message + "\n\n(Aapka UID rules me add nahi hai ya login sahi se nahi hua)."); 
+                alert("❌ Error: " + e.message); 
             }
 
+            // Reset Button
             btn.innerHTML = "Upload Image & Save Post";
             btn.disabled = false;
         }
+        // ==========================================
+
 
         // --- EPISODE LOGIC ---
         async function loadPostsForSelect() {
@@ -238,11 +245,13 @@
             let epNum = document.getElementById("epNum").value;
             let liveLink = document.getElementById("epLive").value;
             let dlLink = document.getElementById("epDl").value;
+            let btn = document.getElementById("saveEpBtn");
 
             if(!pId || pId === "No posts found") return alert("❌ Please select a Post!");
             if(!epNum || !liveLink || !dlLink) return alert("❌ Fill all episode details!");
 
-            document.querySelector("#addEp .action-btn").innerHTML = "Saving...";
+            btn.innerHTML = "Saving...";
+            btn.disabled = true;
             try {
                 await addDoc(collection(db, "episodes"), {
                     postId: pId, epNum: epNum, liveLink: liveLink, dlLink: dlLink
@@ -252,9 +261,10 @@
                 document.getElementById("epLive").value = "";
                 document.getElementById("epDl").value = "";
             } catch(e) {
-                alert("❌ Error adding episode!");
+                alert("❌ Error adding episode: " + e.message);
             }
-            document.querySelector("#addEp .action-btn").innerHTML = "Save Episode";
+            btn.innerHTML = "Save Episode";
+            btn.disabled = false;
         }
 
         // --- DELETE POST LOGIC ---
@@ -272,7 +282,7 @@
         }
 
         window.deletePost = async (id) => {
-            if(confirm("Are you sure you want to delete this post?")) {
+            if(confirm("Warning! Are you sure you want to delete this post?")) {
                 try {
                     await deleteDoc(doc(db, "posts", id)); 
                     alert("🗑️ Post Deleted!"); 
