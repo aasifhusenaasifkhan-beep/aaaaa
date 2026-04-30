@@ -10,29 +10,32 @@
         #loginScreen button { background: #e50914; color: white; padding: 12px 20px; border: none; cursor: pointer; border-radius: 5px; width: 280px; font-weight: bold; font-size: 16px; margin-top: 10px;}
         #adminPanel { display: none; max-width: 800px; margin: auto;}
         .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;}
-        .tab-btn { background: #333; color: white; padding: 10px 20px; border: none; cursor: pointer; margin-right: 5px; border-radius: 5px; }
+        .tab-btn { background: #333; color: white; padding: 10px 20px; border: none; cursor: pointer; margin-right: 5px; border-radius: 5px; font-weight: bold;}
         .tab-btn.active { background: #e50914; }
         .panel { display: none; background: #222; padding: 20px; margin-top: 15px; border-radius: 8px; }
         .panel.active { display: block; }
         input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; background: #333; color: white; border: 1px solid #444; border-radius: 5px; box-sizing: border-box;}
-        button.action-btn { background: #e50914; color: white; padding: 12px 20px; border: none; cursor: pointer; border-radius: 5px; width: 100%; font-weight: bold; margin-top: 10px;}
-        .list-item { display: flex; justify-content: space-between; background: #333; padding: 10px; margin: 5px 0; border-radius: 5px;}
-        .del-btn { background: #ff4500; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;}
+        button.action-btn { background: #e50914; color: white; padding: 12px 20px; border: none; cursor: pointer; border-radius: 5px; width: 100%; font-weight: bold; margin-top: 10px; font-size: 15px;}
+        button.action-btn:disabled { background: #555; cursor: not-allowed; }
+        .list-item { display: flex; justify-content: space-between; background: #333; padding: 10px; margin: 5px 0; border-radius: 5px; align-items: center;}
+        .del-btn { background: #ff4500; color: white; border: none; padding: 5px 15px; border-radius: 3px; cursor: pointer; font-weight: bold;}
     </style>
 </head>
 <body>
 
+    <!-- LOGIN SCREEN -->
     <div id="loginScreen">
         <h2 style="color: #e50914;">Admin Login</h2>
         <input type="email" id="adminEmail" placeholder="Enter Admin Email">
         <input type="password" id="adminPass" placeholder="Enter Password">
-        <button id="loginBtn" onclick="loginAdmin()">Login</button>
+        <button id="loginBtn" onclick="loginAdmin()">Login to Dashboard</button>
     </div>
 
+    <!-- MAIN DASHBOARD -->
     <div id="adminPanel">
         <div class="header-bar">
-            <h2 style="color:white;">Hindi Sub Studio <span style="color:#e50914;">Admin</span></h2>
-            <button onclick="logoutAdmin()" style="background:#555; color:white; padding:8px 15px; border:none; border-radius:5px; cursor:pointer;">Logout</button>
+            <h2 style="color:white; margin: 0;">Hindi Sub <span style="color:#e50914;">Admin</span></h2>
+            <button onclick="logoutAdmin()" style="background:#555; color:white; padding:8px 15px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Logout</button>
         </div>
         
         <div>
@@ -42,22 +45,22 @@
             <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
         </div>
 
-        <!-- Add Post (Input for Category instead of select) -->
+        <!-- 1. ADD POST -->
         <div id="addPost" class="panel active">
-            <h3 style="color:#e50914;">Create New Post</h3>
-            <label>Upload Poster Image:</label>
+            <h3 style="color:#e50914; margin-top: 0;">Create New Post</h3>
+            <label>Upload Poster Image (Cloudinary):</label>
             <input type="file" id="postImage" accept="image/*">
-            <input type="text" id="postCat" placeholder="Category (e.g. Anime Hindi Sub, Web Series)">
+            <input type="text" id="postCat" placeholder="Category (e.g. Anime Hindi Sub, Web Series, Donghua)">
             <input type="text" id="postName" placeholder="Post Name (e.g. Naruto)">
             <input type="text" id="postDate" placeholder="Release Year (e.g. 2024)">
             <input type="text" id="postGenre" placeholder="Genre (e.g. Action, Comedy)">
             <textarea id="postStory" rows="3" placeholder="Story Summary..."></textarea>
-            <button class="action-btn" onclick="savePost()">Upload & Save Post</button>
+            <button class="action-btn" id="savePostBtn" onclick="savePost()">Upload Image & Save Post</button>
         </div>
 
-        <!-- Add Episode (Search Box Added) -->
+        <!-- 2. ADD EPISODE -->
         <div id="addEp" class="panel">
-            <h3 style="color:#e50914;">Add Episode</h3>
+            <h3 style="color:#e50914; margin-top: 0;">Add Episode</h3>
             <input type="text" id="searchPost" placeholder="🔍 Search Post Name here..." onkeyup="filterAdminPosts()" style="background:#111; border-color:var(--primary);">
             <select id="epPostSelect"><option>Loading Posts...</option></select>
             <input type="number" id="epNum" placeholder="Episode Number (e.g. 1)">
@@ -66,16 +69,18 @@
             <button class="action-btn" onclick="saveEpisode()">Save Episode</button>
         </div>
 
+        <!-- 3. DELETE POSTS -->
         <div id="manage" class="panel">
-            <h3 style="color:#e50914;">Manage & Delete Posts</h3>
+            <h3 style="color:#e50914; margin-top: 0;">Manage & Delete Posts</h3>
             <div id="postList">Loading...</div>
         </div>
 
+        <!-- 4. SETTINGS -->
         <div id="settings" class="panel">
-            <h3 style="color:#e50914;">Site Settings</h3>
+            <h3 style="color:#e50914; margin-top: 0;">Site Settings</h3>
             <label>Video Unlock Password (For Users):</label>
             <input type="text" id="setPass" placeholder="e.g. Anime@123">
-            <h4 style="margin-top:15px;">Shortener APIs</h4>
+            <h4 style="margin-top:15px; border-bottom: 1px solid #444; padding-bottom: 5px;">Shortener APIs</h4>
             <input type="text" id="s1url" placeholder="API 1 URL (e.g. https://shrinkme.io/api)">
             <input type="text" id="s1key" placeholder="API 1 KEY">
             <input type="text" id="s2url" placeholder="API 2 URL">
@@ -91,6 +96,7 @@
         import { getFirestore, collection, addDoc, getDocs, doc, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 
+        // Firebase Config (Added Correctly)
         const firebaseConfig = {
             apiKey: "AIzaSyD5wcGP9DyOXQ_QbVLTr7t7ZbL3FSsNr_0",
             authDomain: "hindisubinganim.firebaseapp.com",
@@ -105,6 +111,7 @@
         
         let allAdminPosts = [];
 
+        // --- LOGIN & AUTH CHECK ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById("loginScreen").style.display = "none";
@@ -121,11 +128,13 @@
             let pass = document.getElementById("adminPass").value;
             document.getElementById("loginBtn").innerHTML = "Checking...";
             signInWithEmailAndPassword(auth, email, pass).catch((error) => {
-                alert("Login Failed!"); document.getElementById("loginBtn").innerHTML = "Login";
+                alert("❌ Login Failed! Password ya Email galat hai."); 
+                document.getElementById("loginBtn").innerHTML = "Login to Dashboard";
             });
         }
         window.logoutAdmin = () => signOut(auth);
 
+        // --- TAB SWITCHER ---
         window.switchTab = (id) => {
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -133,27 +142,78 @@
             event.target.classList.add('active');
         }
 
-        async function uploadImage(file) {
-            const formData = new FormData(); formData.append("file", file); formData.append("upload_preset", "asi_anime_upload"); 
-            let res = await fetch("https://api.cloudinary.com/v1_1/dccbzyjtr/image/upload", { method: "POST", body: formData });
-            let data = await res.json(); return data.secure_url; 
-        }
-
+        // --- CLOUDINARY UPLOAD LOGIC (FIXED) ---
         window.savePost = async () => {
             let file = document.getElementById("postImage").files[0];
-            if(!file) return alert("Please select an image!");
-            alert("Uploading Image... Please Wait.");
+            let name = document.getElementById("postName").value;
+            let btn = document.getElementById("savePostBtn");
+
+            if(!file) return alert("❌ Please select a Poster Image!");
+            if(name.trim() === "") return alert("❌ Please enter Post Name!");
+
+            // Button Disable kar diya taaki double click na ho
+            btn.innerHTML = "⏳ 1. Uploading Image to Cloudinary...";
+            btn.disabled = true;
+
+            let imgUrl = "";
+
+            // STEP 1: Upload Image
             try {
-                let imgUrl = await uploadImage(file);
-                await addDoc(collection(db, "posts"), {
-                    category: document.getElementById("postCat").value, name: document.getElementById("postName").value,
-                    releaseDate: document.getElementById("postDate").value, genre: document.getElementById("postGenre").value,
-                    story: document.getElementById("postStory").value, image: imgUrl, timestamp: Date.now()
+                const formData = new FormData(); 
+                formData.append("file", file); 
+                formData.append("upload_preset", "asi_anime_upload"); 
+                
+                let res = await fetch("https://api.cloudinary.com/v1_1/dccbzyjtr/image/upload", { 
+                    method: "POST", 
+                    body: formData 
                 });
-                alert("Post Saved Successfully!"); loadPostsForSelect(); loadPostsForManage();
-            } catch(e) { alert("Error saving post!"); }
+                let data = await res.json(); 
+                
+                if(data.error) {
+                    alert("❌ Cloudinary Error: " + data.error.message + "\nCheck if preset is 'Unsigned'.");
+                    btn.innerHTML = "Upload Image & Save Post";
+                    btn.disabled = false;
+                    return;
+                }
+                imgUrl = data.secure_url; 
+            } catch(e) { 
+                alert("❌ Image Upload Failed! Network issue ya Adblocker on hai."); 
+                btn.innerHTML = "Upload Image & Save Post";
+                btn.disabled = false;
+                return;
+            }
+
+            // STEP 2: Save to Firebase Database
+            btn.innerHTML = "⏳ 2. Saving to Database...";
+            try {
+                await addDoc(collection(db, "posts"), {
+                    category: document.getElementById("postCat").value || "General", 
+                    name: document.getElementById("postName").value,
+                    releaseDate: document.getElementById("postDate").value || "", 
+                    genre: document.getElementById("postGenre").value || "",
+                    story: document.getElementById("postStory").value || "", 
+                    image: imgUrl, 
+                    timestamp: Date.now()
+                });
+                
+                alert("✅ Post Saved Successfully!"); 
+                
+                // Form clear karna
+                document.getElementById("postImage").value = "";
+                document.getElementById("postName").value = "";
+                document.getElementById("postStory").value = "";
+                
+                loadPostsForSelect(); 
+                loadPostsForManage();
+            } catch(e) { 
+                alert("❌ Firebase Error: " + e.message + "\n\n(Aapka UID rules me add nahi hai ya login sahi se nahi hua)."); 
+            }
+
+            btn.innerHTML = "Upload Image & Save Post";
+            btn.disabled = false;
         }
 
+        // --- EPISODE LOGIC ---
         async function loadPostsForSelect() {
             const snap = await getDocs(collection(db, "posts")); 
             allAdminPosts = [];
@@ -167,7 +227,6 @@
             document.getElementById("epPostSelect").innerHTML = html || "<option>No posts found</option>";
         }
 
-        // Search Filter function for Add Episode
         window.filterAdminPosts = () => {
             let q = document.getElementById("searchPost").value.toLowerCase();
             let filtered = allAdminPosts.filter(p => p.name.toLowerCase().includes(q));
@@ -175,43 +234,77 @@
         }
 
         window.saveEpisode = async () => {
-            await addDoc(collection(db, "episodes"), {
-                postId: document.getElementById("epPostSelect").value, epNum: document.getElementById("epNum").value,
-                liveLink: document.getElementById("epLive").value, dlLink: document.getElementById("epDl").value
-            }); alert("Episode Added!");
+            let pId = document.getElementById("epPostSelect").value;
+            let epNum = document.getElementById("epNum").value;
+            let liveLink = document.getElementById("epLive").value;
+            let dlLink = document.getElementById("epDl").value;
+
+            if(!pId || pId === "No posts found") return alert("❌ Please select a Post!");
+            if(!epNum || !liveLink || !dlLink) return alert("❌ Fill all episode details!");
+
+            document.querySelector("#addEp .action-btn").innerHTML = "Saving...";
+            try {
+                await addDoc(collection(db, "episodes"), {
+                    postId: pId, epNum: epNum, liveLink: liveLink, dlLink: dlLink
+                }); 
+                alert("✅ Episode Added!");
+                document.getElementById("epNum").value = "";
+                document.getElementById("epLive").value = "";
+                document.getElementById("epDl").value = "";
+            } catch(e) {
+                alert("❌ Error adding episode!");
+            }
+            document.querySelector("#addEp .action-btn").innerHTML = "Save Episode";
         }
 
+        // --- DELETE POST LOGIC ---
         async function loadPostsForManage() {
-            const snap = await getDocs(collection(db, "posts")); let html = "";
-            snap.forEach(d => {
-                html += `<div class="list-item"><span>${d.data().name}</span> <button class="del-btn" onclick="deletePost('${d.id}')">Delete</button></div>`;
-            });
-            document.getElementById("postList").innerHTML = html || "No posts found.";
+            try {
+                const snap = await getDocs(collection(db, "posts")); 
+                let html = "";
+                snap.forEach(d => {
+                    html += `<div class="list-item"><span>${d.data().name}</span> <button class="del-btn" onclick="deletePost('${d.id}')">Delete</button></div>`;
+                });
+                document.getElementById("postList").innerHTML = html || "No posts found.";
+            } catch(e) {
+                document.getElementById("postList").innerHTML = "Error loading posts.";
+            }
         }
 
         window.deletePost = async (id) => {
             if(confirm("Are you sure you want to delete this post?")) {
-                await deleteDoc(doc(db, "posts", id)); alert("Post Deleted!"); loadPostsForManage(); loadPostsForSelect();
+                try {
+                    await deleteDoc(doc(db, "posts", id)); 
+                    alert("🗑️ Post Deleted!"); 
+                    loadPostsForManage(); 
+                    loadPostsForSelect();
+                } catch(e) { alert("❌ Error Deleting Post!"); }
             }
         }
 
+        // --- SETTINGS LOGIC ---
         window.saveSettings = async () => {
             let shorteners = [];
             if(document.getElementById("s1url").value) shorteners.push({url: document.getElementById("s1url").value, key: document.getElementById("s1key").value});
             if(document.getElementById("s2url").value) shorteners.push({url: document.getElementById("s2url").value, key: document.getElementById("s2key").value});
             if(document.getElementById("s3url").value) shorteners.push({url: document.getElementById("s3url").value, key: document.getElementById("s3key").value});
-            await setDoc(doc(db, "settings", "main"), { videoPassword: document.getElementById("setPass").value, shorteners: shorteners });
-            alert("Settings Updated!");
+            
+            try {
+                await setDoc(doc(db, "settings", "main"), { videoPassword: document.getElementById("setPass").value, shorteners: shorteners });
+                alert("✅ Settings Updated!");
+            } catch(e) { alert("❌ Error saving settings!"); }
         }
 
         async function loadSettings() {
-            const snap = await getDoc(doc(db, "settings", "main"));
-            if(snap.exists()) {
-                let d = snap.data(); document.getElementById("setPass").value = d.videoPassword || "";
-                if(d.shorteners && d.shorteners[0]) { document.getElementById("s1url").value = d.shorteners[0].url; document.getElementById("s1key").value = d.shorteners[0].key; }
-                if(d.shorteners && d.shorteners[1]) { document.getElementById("s2url").value = d.shorteners[1].url; document.getElementById("s2key").value = d.shorteners[1].key; }
-                if(d.shorteners && d.shorteners[2]) { document.getElementById("s3url").value = d.shorteners[2].url; document.getElementById("s3key").value = d.shorteners[2].key; }
-            }
+            try {
+                const snap = await getDoc(doc(db, "settings", "main"));
+                if(snap.exists()) {
+                    let d = snap.data(); document.getElementById("setPass").value = d.videoPassword || "";
+                    if(d.shorteners && d.shorteners[0]) { document.getElementById("s1url").value = d.shorteners[0].url; document.getElementById("s1key").value = d.shorteners[0].key; }
+                    if(d.shorteners && d.shorteners[1]) { document.getElementById("s2url").value = d.shorteners[1].url; document.getElementById("s2key").value = d.shorteners[1].key; }
+                    if(d.shorteners && d.shorteners[2]) { document.getElementById("s3url").value = d.shorteners[2].url; document.getElementById("s3key").value = d.shorteners[2].key; }
+                }
+            } catch(e) {}
         }
     </script>
 </body>
