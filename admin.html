@@ -19,6 +19,7 @@
         button.action-btn:disabled { background: #555; cursor: not-allowed; }
         .list-item { display: flex; justify-content: space-between; background: #333; padding: 10px; margin: 5px 0; border-radius: 5px; align-items: center;}
         .del-btn { background: #ff4500; color: white; border: none; padding: 5px 15px; border-radius: 3px; cursor: pointer; font-weight: bold;}
+        .img-box { background: #111; padding: 15px; border-radius: 8px; border: 1px dashed #555; margin-bottom: 10px;}
     </style>
 </head>
 <body>
@@ -49,17 +50,25 @@
         <div id="addPost" class="panel active">
             <h3 style="color:#e50914; margin-top: 0;">Create New Post</h3>
             
-            <label style="color:#aaa; font-size: 14px;">1. Upload Poster Image:</label>
-            <input type="file" id="postImage" accept="image/*">
+            <div class="img-box">
+                <label style="color:#ffc107; font-size: 14px; font-weight: bold;">Step 1: Add Image (Choose Any 1 Option)</label><br><br>
+                <label style="color:#aaa; font-size: 13px;">Option A: Upload File (Cloudinary)</label>
+                <input type="file" id="postImage" accept="image/*">
+                
+                <div style="text-align: center; margin: 10px 0; font-weight: bold; color: #555;">--- OR ---</div>
+                
+                <label style="color:#aaa; font-size: 13px;">Option B: Paste Direct Image URL (Google/Pinterest se)</label>
+                <input type="text" id="postImageUrl" placeholder="https://example.com/image.jpg">
+            </div>
             
-            <label style="color:#aaa; font-size: 14px; margin-top: 10px; display: block;">2. Post Details:</label>
+            <label style="color:#aaa; font-size: 14px; margin-top: 10px; display: block;">Step 2: Post Details</label>
             <input type="text" id="postCat" placeholder="Category (e.g. Anime Hindi Sub, Web Series)">
             <input type="text" id="postName" placeholder="Post Name (e.g. Naruto)">
             <input type="text" id="postDate" placeholder="Release Year (e.g. 2024)">
             <input type="text" id="postGenre" placeholder="Genre (e.g. Action, Comedy)">
             <textarea id="postStory" rows="3" placeholder="Story Summary..."></textarea>
             
-            <button class="action-btn" id="savePostBtn" onclick="savePost()">Upload Image & Save Post</button>
+            <button class="action-btn" id="savePostBtn" onclick="savePost()">Save Post</button>
         </div>
 
         <!-- 2. ADD EPISODE -->
@@ -145,64 +154,61 @@
             event.target.classList.add('active');
         }
 
-
         // ==========================================
-        // 🔥 CLOUDINARY & FIREBASE UPLOAD FIX 🔥
+        // 🔥 ULTIMATE IMAGE UPLOAD & SAVE SYSTEM 🔥
         // ==========================================
         window.savePost = async () => {
             let fileInput = document.getElementById("postImage");
             let file = fileInput.files[0];
-            let name = document.getElementById("postName").value;
+            let urlInput = document.getElementById("postImageUrl").value.trim();
+            let name = document.getElementById("postName").value.trim();
             let btn = document.getElementById("savePostBtn");
 
-            // Validation
-            if(!file) return alert("❌ Pehle Image select karein!");
-            if(name.trim() === "") return alert("❌ Pehle Post ka Naam dalein!");
+            // Validations
+            if(!file && urlInput === "") return alert("❌ Pehle Image select karein YA Image URL dalein!");
+            if(name === "") return alert("❌ Pehle Post ka Naam dalein!");
 
-            btn.innerHTML = "⏳ 1. Uploading Image to Cloudinary...";
+            btn.innerHTML = "⏳ Saving Post... Please Wait";
             btn.disabled = true;
 
+            let finalImgUrl = "";
+
             try {
-                // STEP 1: CLOUDINARY UPLOAD (Aapki details ke sath)
-                const formData = new FormData(); 
-                formData.append("file", file); 
-                formData.append("upload_preset", "asi_anime_upload"); // AAPKA PRESET
-                
-                // AAPKA CLOUDINARY URL
-                let res = await fetch("https://api.cloudinary.com/v1_1/dccbzyjtr/image/upload", { 
-                    method: "POST", 
-                    body: formData 
-                });
-                
-                let data = await res.json(); 
-                
-                if(data.error) {
-                    alert("❌ Cloudinary Error: " + data.error.message);
-                    btn.innerHTML = "Upload Image & Save Post";
-                    btn.disabled = false;
-                    return;
+                // If user pasted a direct URL, use it immediately
+                if(urlInput !== "") {
+                    finalImgUrl = urlInput;
+                } 
+                // Else if user uploaded a file, use Cloudinary
+                else if(file) {
+                    const formData = new FormData(); 
+                    formData.append("file", file); 
+                    formData.append("upload_preset", "asi_anime_upload"); 
+                    
+                    let res = await fetch("https://api.cloudinary.com/v1_1/dccbzyjtr/image/upload", { 
+                        method: "POST", body: formData 
+                    });
+                    
+                    let data = await res.json(); 
+                    if(data.error) throw new Error(data.error.message);
+                    finalImgUrl = data.secure_url; 
                 }
 
-                // Image live link mil gayi
-                let imgUrl = data.secure_url; 
-
-                // STEP 2: FIREBASE DATABASE SAVE
-                btn.innerHTML = "⏳ 2. Saving Data to Firebase...";
-                
+                // SAVE TO FIREBASE
                 await addDoc(collection(db, "posts"), {
                     category: document.getElementById("postCat").value || "General", 
-                    name: document.getElementById("postName").value,
+                    name: name,
                     releaseDate: document.getElementById("postDate").value || "", 
                     genre: document.getElementById("postGenre").value || "",
                     story: document.getElementById("postStory").value || "", 
-                    image: imgUrl, // Yahan image save ho rahi hai
+                    image: finalImgUrl, 
                     timestamp: Date.now()
                 });
                 
-                alert("✅ Success! Image Uploaded & Post Saved!"); 
+                alert("✅ Success! Post Saved Successfully!"); 
                 
-                // Form clear karna
+                // Clear Form
                 fileInput.value = ""; 
+                document.getElementById("postImageUrl").value = "";
                 document.getElementById("postName").value = "";
                 document.getElementById("postStory").value = "";
                 
@@ -214,10 +220,9 @@
             }
 
             // Reset Button
-            btn.innerHTML = "Upload Image & Save Post";
+            btn.innerHTML = "Save Post";
             btn.disabled = false;
         }
-        // ==========================================
 
 
         // --- EPISODE LOGIC ---
