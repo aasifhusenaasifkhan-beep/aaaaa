@@ -34,40 +34,44 @@
         async function loadDetail() {
             if(!postId) return document.getElementById("detailBox").innerHTML = "Error: Invalid ID";
             
-            const postSnap = await getDoc(doc(db, "posts", postId));
-            if(!postSnap.exists()) return document.getElementById("detailBox").innerHTML = "Post Not Found or Deleted";
-            
-            const post = postSnap.data();
-            
-            const epQuery = query(collection(db, "episodes"), where("postId", "==", postId));
-            const epSnap = await getDocs(epQuery);
-            let episodes = [];
-            epSnap.forEach(d => episodes.push({id: d.id, ...d.data()}));
-            
-            episodes.sort((a,b) => parseFloat(a.epNum) - parseFloat(b.epNum));
-            
-            let epHtml = "";
-            episodes.forEach(ep => {
-                epHtml += `<a href="watch.html?epid=${ep.id}" class="ep-btn">Episode ${ep.epNum}</a>`;
-            });
-            if(epHtml === "") epHtml = "<p style='color:#aaa;'>No episodes uploaded yet.</p>";
+            try {
+                const postSnap = await getDoc(doc(db, "posts", postId));
+                if(!postSnap.exists()) return document.getElementById("detailBox").innerHTML = "Post Not Found or Deleted";
+                
+                const post = postSnap.data();
+                
+                const epQuery = query(collection(db, "episodes"), where("postId", "==", postId));
+                const epSnap = await getDocs(epQuery);
+                let episodes = [];
+                epSnap.forEach(d => episodes.push({id: d.id, ...d.data()}));
+                
+                episodes.sort((a,b) => parseFloat(a.epNum) - parseFloat(b.epNum));
+                
+                let epHtml = "";
+                episodes.forEach(ep => {
+                    epHtml += `<a href="watch.html?epid=${ep.id}" class="ep-btn">Episode ${ep.epNum}</a>`;
+                });
+                if(epHtml === "") epHtml = "<p style='color:#aaa;'>No episodes uploaded yet.</p>";
 
-            document.getElementById("detailBox").innerHTML = `
-                <div class="detail-container">
-                    <img src="${post.image}" class="detail-poster">
-                    <div style="text-align: left;">
-                        <h1 style="font-size:30px; color:white; margin-bottom:10px;">${post.name}</h1>
-                        <div class="meta-tags">
-                            <span>📁 ${post.category}</span>
-                            <span>📅 ${post.releaseDate}</span>
-                            <span>🏷️ ${post.genre}</span>
+                document.getElementById("detailBox").innerHTML = `
+                    <div class="detail-container">
+                        <img src="${post.image}" class="detail-poster" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'">
+                        <div style="text-align: left;">
+                            <h1 style="font-size:30px; color:white; margin-bottom:10px;">${post.name}</h1>
+                            <div class="meta-tags">
+                                <span>📁 ${post.category || "General"}</span>
+                                <span>📅 ${post.releaseDate}</span>
+                                <span>🏷️ ${post.genre}</span>
+                            </div>
+                            <p style="color:#aaa; line-height:1.6;">${post.story}</p>
+                            <h3 style="margin: 25px 0 15px; color: var(--primary);">Episodes List</h3>
+                            <div>${epHtml}</div>
                         </div>
-                        <p style="color:#aaa; line-height:1.6;">${post.story}</p>
-                        <h3 style="margin: 25px 0 15px; color: var(--primary);">Episodes List</h3>
-                        <div>${epHtml}</div>
                     </div>
-                </div>
-            `;
+                `;
+            } catch(e) {
+                document.getElementById("detailBox").innerHTML = "Error loading details.";
+            }
         }
         loadDetail();
     </script>
