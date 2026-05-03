@@ -12,12 +12,10 @@
     </header>
 
     <div id="password-overlay" class="pass-overlay">
-        <h2 style="color: var(--primary); margin-bottom:10px;">🔒 Video is Locked!</h2>
-        <p style="color:#aaa; margin-bottom:20px;">Enter the Secret Password to watch.</p>
-        <input type="text" id="passInput" placeholder="Enter Password Here">
-        <button class="btn-action" style="background:var(--primary);" onclick="checkPassword()">Unlock Video</button>
-        <br>
-        <a href="https://t.me/hindisubinganime" target="_blank" style="color: #0088cc; text-decoration:none;">👉 Get Password from our Telegram</a>
+        <h2 style="color: #e50914; margin-bottom:10px;">🔒 Video is Locked!</h2>
+        <input type="text" id="passInput" placeholder="Enter Password Here" style="padding:10px; width:250px; text-align:center;">
+        <button class="btn-action" style="background:#e50914;" onclick="checkPassword()">Unlock Video</button>
+        <a href="https://t.me/hindisubinganime" target="_blank" style="color: #0088cc; text-decoration:none; margin-top:10px;">👉 Get Password from Telegram</a>
     </div>
 
     <div class="watch-container" id="watchBox" style="display: none;">
@@ -34,7 +32,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD5wcGP9DyOXQ_QbVLTr7t7ZbL3FSsNr_0",
@@ -50,17 +48,20 @@
         const params = new URLSearchParams(window.location.search);
         const epId = params.get("epid");
         let episodeData = null;
-        let globalPass = "";
+        let globalPass = "1234"; 
         let shorteners = [];
 
         async function initPage() {
-            const setSnap = await getDoc(doc(db, "settings", "main"));
-            if(setSnap.exists()){
-                globalPass = setSnap.data().videoPassword || "1234";
-                shorteners = setSnap.data().shorteners || [];
-            }
+            try {
+                const setSnap = await getDoc(doc(db, "settings", "main"));
+                if(setSnap.exists()){
+                    globalPass = setSnap.data().videoPassword || "1234";
+                    shorteners = setSnap.data().shorteners || [];
+                }
+            } catch(e){}
 
-            if(localStorage.getItem("site_vid_pass") === globalPass){
+            // Space aur capital letters ki problem theek kar di
+            if(localStorage.getItem("site_vid_pass") === globalPass.trim()){
                 document.getElementById("password-overlay").style.display = "none";
                 document.getElementById("watchBox").style.display = "block";
             }
@@ -73,26 +74,44 @@
         }
 
         window.checkPassword = () => {
-            let val = document.getElementById("passInput").value;
-            if(val === globalPass){
-                localStorage.setItem("site_vid_pass", globalPass);
+            let val = document.getElementById("passInput").value.trim();
+            if(val === globalPass.trim()){
+                localStorage.setItem("site_vid_pass", globalPass.trim());
                 document.getElementById("password-overlay").style.display = "none";
                 document.getElementById("watchBox").style.display = "block";
-            } else { alert("Incorrect Password! Please check Telegram."); }
+            } else { alert("❌ Incorrect Password! Space wagera check karein."); }
         }
 
-        window.premiumDownload = () => {
-            let prem = localStorage.getItem("premium_valid_till");
-            if(prem && parseInt(prem) > Date.now()){
+        // --- NEW PREMIUM VERIFICATION SYSTEM ---
+        window.premiumDownload = async () => {
+            let token = prompt("Enter your Premium Token (Given by Admin):");
+            if(!token) return;
+
+            try {
+                const q = query(collection(db, "premium_users"), where("token", "==", token.trim()));
+                const snap = await getDocs(q);
+                
+                if(snap.empty) {
+                    return alert("❌ Invalid Token! Ye token exist nahi karta.");
+                }
+
+                let user = snap.docs[0].data();
+                if(Date.now() > user.expiry) {
+                    return alert("❌ Your Token has Expired! 28 days pure ho chuke hain.");
+                }
+
+                // If Valid
+                alert("✅ Premium Access Granted! Downloading...");
                 window.open(episodeData.dlLink, "_blank");
-            } else {
-                alert("Your Premium has expired or is not activated. Get token from Telegram.");
+
+            } catch(e) {
+                alert("Server checking failed. Try again.");
             }
         }
 
-        // ORIGINAL ANTI-BYPASS SYSTEM FROM YOUR OLD FILE
+        // SHORTENER LOGIC
         function makeUniqueUrl(original) {
-            const dailyId = Math.floor(Date.now() / 86400000); // changes every 24 hours
+            const dailyId = Math.floor(Date.now() / 86400000); 
             const separator = original.includes('?') ? '&' : '?';
             return original + separator + "asi_uid=" + dailyId;
         }
@@ -109,32 +128,22 @@
             const apiUrl = `${currentApi.url}?api=${currentApi.key}&url=${encodeURIComponent(bypassedUniqueLink)}&format=text`;
 
             try {
-                let finalShortLink = null;
                 const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
                 const response = await fetch(proxyUrl);
                 const textData = await response.text();
+                let finalShortLink = null;
 
                 if (textData && (textData.trim().startsWith("http://") || textData.trim().startsWith("https://"))) {
                     finalShortLink = textData.trim();
                 }
 
                 if (finalShortLink) {
-                    // Form Post Method hides the HTTP Referrer from Ad Networks
                     const form = document.createElement('form');
-                    form.method = "GET";
-                    form.action = finalShortLink;
-                    form.target = "_blank";
-                    document.body.appendChild(form);
-                    form.submit();
-                    document.body.removeChild(form);
-                } else {
-                    alert("Ad Network Error! Please try again.");
-                }
-            } catch(e) { 
-                alert("Generation Failed. Network Issue."); 
-            } finally {
-                btn.innerHTML = "⬇️ Solve Shortener to Download";
-            }
+                    form.method = "GET"; form.action = finalShortLink; form.target = "_blank";
+                    document.body.appendChild(form); form.submit(); document.body.removeChild(form);
+                } else { alert("Ad Network Error!"); }
+            } catch(e) { alert("Generation Failed. Network Issue."); }
+            btn.innerHTML = "⬇️ Solve Shortener to Download";
         }
 
         initPage();
