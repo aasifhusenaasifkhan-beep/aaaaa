@@ -5,7 +5,6 @@ body { background-color: var(--bg-dark); color: var(--text-light); overflow-x: h
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
 
-/* Header & Three Dots */
 header { display: flex; justify-content: space-between; align-items: center; padding: 15px 5%; background: rgba(22,22,26,0.95); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .header-left { display: flex; align-items: center; gap: 15px; }
 .logo { font-size: 22px; font-weight: 800; color: white; text-decoration: none; }
@@ -14,7 +13,6 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 .search-box input { padding: 10px 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); background: #222; color: white; outline: none; width: 220px; transition: 0.3s;}
 .search-box input:focus { border-color: var(--primary); width: 260px;}
 
-/* Three Dots Dropdown */
 .dropdown { position: relative; display: inline-block; margin-left: 15px; }
 .dropbtn { background: none; color: white; font-size: 24px; border: none; cursor: pointer; padding: 5px; transition: 0.3s;}
 .dropbtn:hover { color: var(--primary); }
@@ -23,7 +21,6 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 .dropdown-content a:hover { background-color: var(--primary); }
 .show { display: block; }
 
-/* A-Z Modal Window */
 #azModal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
 .az-modal-content { background-color: var(--card-bg); margin: 10% auto; padding: 20px; border: 1px solid #333; width: 80%; max-width: 600px; border-radius: 10px; text-align: center; }
 .az-modal-content h3 { color: var(--primary); margin-bottom: 15px; }
@@ -32,30 +29,29 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 .close-modal { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
 .close-modal:hover { color: white; }
 
-/* Grid & Cards */
 .anime-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; padding: 30px 5%; }
 .anime-card { background: var(--card-bg); border-radius: 10px; overflow: hidden; cursor: pointer; position: relative; transition: 0.3s; border: 1px solid #222;}
 .anime-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(229,9,20,0.3); border-color: var(--primary);}
 .anime-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; }
-.badge { position: absolute; top: 10px; left: 10px; background: var(--primary); padding: 4px 10px; font-size: 11px; font-weight: bold; border-radius: 5px; color: white; text-transform: uppercase;}
+.badge { position: absolute; top: 10px; left: 10px; background: var(--primary); padding: 4px 10px; font-size: 11px; font-weight: bold; border-radius: 5px; color: white; text-transform: uppercase; z-index: 10;}
 .anime-info { padding: 12px; }
 .anime-info h4 { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .genre-tag { font-size: 12px; color: var(--text-muted); }
 
-/* Detail Page */
 .detail-container { max-width: 900px; margin: 40px auto; display: flex; gap: 30px; padding: 20px; background: var(--card-bg); border-radius: 15px; border: 1px solid #333;}
 .detail-poster { width: 250px; border-radius: 10px; aspect-ratio: 2/3; object-fit: cover; }
 .meta-tags span { display: inline-block; background: #333; padding: 5px 12px; border-radius: 15px; font-size: 12px; margin-right: 10px; margin-bottom: 15px; }
 .ep-btn { background: #222; color: white; border: 1px solid #444; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: inline-block; margin: 5px; cursor: pointer; font-weight: bold; transition: 0.3s;}
 .ep-btn:hover { background: var(--primary); }
 
-/* Player */
 .watch-container { max-width: 900px; margin: 20px auto; text-align: center; padding: 20px;}
 .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; background: #000; border-radius: 10px; overflow: hidden; transition: 0.3s; border: 1px solid #333;}
 .video-wrapper.zoomed { transform: scale(1.1); z-index: 10; border: 2px solid var(--primary); box-shadow: 0 0 30px rgba(0,0,0,0.9);}
 .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
 .btn-action { padding: 12px 25px; border-radius: 30px; border: none; font-weight: bold; cursor: pointer; color: white; margin: 10px; transition: 0.3s;}
 .btn-action:hover { transform: translateY(-3px); }
+
+.pass-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,10,12,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:3000; }
 
 @media (max-width: 768px) {
     header { flex-direction: column; gap: 15px; }
