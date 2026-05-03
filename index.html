@@ -13,34 +13,29 @@
         <div class="header-left">
             <a href="index.html" class="logo">Hindi Sub <span>Studio</span></a>
         </div>
-        
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="Search Series, Anime..." onkeyup="searchPosts()">
-            
-            <!-- Three Dots Menu -->
             <div class="dropdown">
-                <button onclick="toggleDotsMenu()" class="dropbtn">⋮</button>
+                <button onclick="document.getElementById('dotMenu').classList.toggle('show')" class="dropbtn">⋮</button>
                 <div id="dotMenu" class="dropdown-content">
-                    <a href="javascript:void(0)" onclick="openAZ()"><i class="fas fa-sort-alpha-down"></i> A-Z List (0-9)</a>
+                    <a href="javascript:void(0)" onclick="document.getElementById('azModal').style.display='block'"><i class="fas fa-sort-alpha-down"></i> A-Z List</a>
                     <a href="https://t.me/hindisubanime_q" target="_blank"><i class="fas fa-users"></i> Telegram Group</a>
                     <a href="https://t.me/hindisubinganime" target="_blank"><i class="fas fa-bullhorn"></i> Telegram Channel</a>
-                    <a href="javascript:void(0)" onclick="applyPremium()"><i class="fas fa-crown"></i> 28-Days Premium</a>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- A-Z Modal Popup -->
     <div id="azModal">
         <div class="az-modal-content">
-            <span class="close-modal" onclick="closeAZ()">&times;</span>
+            <span class="close-modal" onclick="document.getElementById('azModal').style.display='none'">&times;</span>
             <h3>Directory (A-Z & 0-9)</h3>
             <div id="azButtonsBox"></div>
         </div>
     </div>
 
     <div class="anime-grid" id="postGrid">
-        <h2 style="text-align: center; width: 100%; color: var(--primary);">Loading Content...</h2>
+        <h2 style="text-align: center; width: 100%; color: #e50914;">Loading Content...</h2>
     </div>
 
     <script type="module">
@@ -59,35 +54,18 @@
         const db = getFirestore(app);
         let allPosts = [];
 
-        // Three Dots Menu Logic
-        window.toggleDotsMenu = () => {
-            document.getElementById("dotMenu").classList.toggle("show");
-        }
-        // Close dropdown if clicked outside
         window.onclick = function(event) {
             if (!event.target.matches('.dropbtn')) {
                 var dropdowns = document.getElementsByClassName("dropdown-content");
                 for (var i = 0; i < dropdowns.length; i++) {
                     var openDropdown = dropdowns[i];
-                    if (openDropdown.classList.contains('show')) openDropdown.classList.remove('show');
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
                 }
             }
         }
 
-        // Premium Logic
-        window.applyPremium = () => {
-            let token = prompt("Enter Premium Access Token:");
-            if(token) {
-                let expiry = Date.now() + (28 * 24 * 60 * 60 * 1000); 
-                localStorage.setItem("premium_valid_till", expiry);
-                alert("Premium Activated for 28 Days! Direct Download Unlocked.");
-            }
-        }
-
-        // A-Z Logic
-        window.openAZ = () => { document.getElementById("azModal").style.display = "block"; }
-        window.closeAZ = () => { document.getElementById("azModal").style.display = "none"; }
-        
         const azDiv = document.getElementById("azButtonsBox");
         azDiv.innerHTML += `<button class="az-btn" onclick="filterAZ('ALL')">All</button>`;
         "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(l => {
@@ -95,30 +73,33 @@
         });
 
         window.filterAZ = (letter) => {
-            closeAZ();
+            document.getElementById('azModal').style.display='none';
             if(letter === 'ALL') return displayPosts(allPosts);
             displayPosts(allPosts.filter(p => p.name.toUpperCase().startsWith(letter)));
         }
 
-        // Load Posts
         async function loadPosts() {
-            const snap = await getDocs(collection(db, "posts"));
-            allPosts = [];
-            snap.forEach(doc => allPosts.push({ id: doc.id, ...doc.data() }));
-            allPosts.sort((a,b) => b.timestamp - a.timestamp);
-            displayPosts(allPosts);
+            try {
+                const snap = await getDocs(collection(db, "posts"));
+                allPosts = [];
+                snap.forEach(doc => allPosts.push({ id: doc.id, ...doc.data() }));
+                allPosts.sort((a,b) => b.timestamp - a.timestamp);
+                displayPosts(allPosts);
+            } catch(e) {
+                document.getElementById("postGrid").innerHTML = "<h3 style='color:white;width:100%;text-align:center;'>Network Error. Please refresh.</h3>";
+            }
         }
 
         window.displayPosts = (data) => {
             const grid = document.getElementById("postGrid");
             grid.innerHTML = "";
-            if(data.length === 0) return grid.innerHTML = "<h3 style='color:white;text-align:center;width:100%;'>No content found.</h3>";
+            if(data.length === 0) return grid.innerHTML = "<h3 style='color:white;width:100%;text-align:center;'>No content found.</h3>";
 
             data.forEach(post => {
                 grid.innerHTML += `
                     <div class="anime-card" onclick="window.location.href='detail.html?id=${post.id}'">
-                        <div class="badge">${post.category}</div>
-                        <img src="${post.image}" alt="${post.name}">
+                        <div class="badge">${post.category || "General"}</div>
+                        <img src="${post.image}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'">
                         <div class="anime-info">
                             <h4>${post.name}</h4>
                             <span class="genre-tag">${post.genre}</span>
