@@ -13,7 +13,7 @@
 
     <div id="password-overlay" class="pass-overlay">
         <h2 style="color: #e50914; margin-bottom:10px;">🔒 Video is Locked!</h2>
-        <input type="text" id="passInput" placeholder="Enter Password Here" style="padding:10px; width:250px; text-align:center;">
+        <input type="text" id="passInput" placeholder="Enter Password Here" style="padding:10px; width:250px; text-align:center; border-radius:5px; border:none;">
         <button class="btn-action" style="background:#e50914;" onclick="checkPassword()">Unlock Video</button>
         <a href="https://t.me/hindisubinganime" target="_blank" style="color: #0088cc; text-decoration:none; margin-top:10px;">👉 Get Password from Telegram</a>
     </div>
@@ -60,17 +60,18 @@
                 }
             } catch(e){}
 
-            // Space aur capital letters ki problem theek kar di
             if(localStorage.getItem("site_vid_pass") === globalPass.trim()){
                 document.getElementById("password-overlay").style.display = "none";
                 document.getElementById("watchBox").style.display = "block";
             }
 
-            const epSnap = await getDoc(doc(db, "episodes", epId));
-            if(epSnap.exists()){
-                episodeData = epSnap.data();
-                document.getElementById("liveFrame").src = episodeData.liveLink;
-            }
+            try {
+                const epSnap = await getDoc(doc(db, "episodes", epId));
+                if(epSnap.exists()){
+                    episodeData = epSnap.data();
+                    document.getElementById("liveFrame").src = episodeData.liveLink;
+                }
+            } catch(e){}
         }
 
         window.checkPassword = () => {
@@ -79,10 +80,9 @@
                 localStorage.setItem("site_vid_pass", globalPass.trim());
                 document.getElementById("password-overlay").style.display = "none";
                 document.getElementById("watchBox").style.display = "block";
-            } else { alert("❌ Incorrect Password! Space wagera check karein."); }
+            } else { alert("❌ Incorrect Password!"); }
         }
 
-        // --- NEW PREMIUM VERIFICATION SYSTEM ---
         window.premiumDownload = async () => {
             let token = prompt("Enter your Premium Token (Given by Admin):");
             if(!token) return;
@@ -92,7 +92,7 @@
                 const snap = await getDocs(q);
                 
                 if(snap.empty) {
-                    return alert("❌ Invalid Token! Ye token exist nahi karta.");
+                    return alert("❌ Invalid Token! Ye token database me nahi hai.");
                 }
 
                 let user = snap.docs[0].data();
@@ -100,16 +100,13 @@
                     return alert("❌ Your Token has Expired! 28 days pure ho chuke hain.");
                 }
 
-                // If Valid
                 alert("✅ Premium Access Granted! Downloading...");
                 window.open(episodeData.dlLink, "_blank");
-
             } catch(e) {
                 alert("Server checking failed. Try again.");
             }
         }
 
-        // SHORTENER LOGIC
         function makeUniqueUrl(original) {
             const dailyId = Math.floor(Date.now() / 86400000); 
             const separator = original.includes('?') ? '&' : '?';
