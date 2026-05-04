@@ -14,7 +14,7 @@
     <!-- Password Overlay -->
     <div id="password-overlay" class="pass-overlay">
         <h2 style="color: #e50914; margin-bottom:10px;">🔒 Video is Locked!</h2>
-        <input type="text" id="passInput" placeholder="Enter Password Here" style="padding:10px; width:250px; text-align:center; border-radius:5px; border:none;">
+        <input type="text" id="passInput" placeholder="Enter Password Here" style="padding:10px; width:250px; text-align:center; border-radius:5px; border:none; outline:none;">
         <button class="btn-action" id="unlockBtn" style="background:#e50914;" onclick="checkPassword()">Loading Data...</button>
         <a href="https://t.me/hindisubinganime" target="_blank" style="color: #0088cc; text-decoration:none; margin-top:10px;">👉 Get Password from Telegram</a>
     </div>
@@ -59,19 +59,22 @@
                 // 1. Fetch Admin Settings
                 const setSnap = await getDoc(doc(db, "settings", "main"));
                 if(setSnap.exists() && setSnap.data()){
-                    globalPass = (setSnap.data().videoPassword || "").trim();
+                    // String me convert kar diya taaki number wali problem na aaye
+                    globalPass = String(setSnap.data().videoPassword || "").trim().toLowerCase();
                     shorteners = setSnap.data().shorteners || [];
                 }
 
                 isSettingsLoaded = true;
                 document.getElementById("unlockBtn").innerHTML = "Unlock Video";
 
+                let savedPass = String(localStorage.getItem("site_vid_pass") || "").trim().toLowerCase();
+
                 // 2. Password Check Logic
                 if(globalPass === "") {
-                    // Agar admin ne password nahi lagaya hai, direct open karo
+                    // Agar password khali hai toh direct open
                     unlockVideo();
-                } else if(localStorage.getItem("site_vid_pass") === globalPass) {
-                    // Agar user ne pehle se sahi password daala hua hai
+                } else if(savedPass === globalPass && savedPass !== "") {
+                    // Agar purana password match ho raha hai
                     unlockVideo();
                 }
 
@@ -82,21 +85,27 @@
                     document.getElementById("liveFrame").src = episodeData.liveLink;
                 }
             } catch(e){
-                alert("Database load hone me problem aayi. Page refresh karein.");
+                alert("Database connection slow hai. Page refresh karein.");
             }
         }
 
         // On Click Check Password
         window.checkPassword = () => {
-            if(!isSettingsLoaded) return alert("System loading, please wait 1 second...");
+            if(!isSettingsLoaded) return alert("System is loading, please wait 1 second...");
 
-            let val = document.getElementById("passInput").value.trim();
+            let val = String(document.getElementById("passInput").value).trim().toLowerCase();
             
+            // DIAGNOSTIC CHEAT CODE (Sirf aapke liye)
+            if(val === "checkpass123") {
+                return alert("Admin ne jo password set kiya hai wo ye hai: [" + globalPass + "]");
+            }
+
             if(val === globalPass){
                 localStorage.setItem("site_vid_pass", globalPass);
                 unlockVideo();
             } else { 
-                alert("❌ Incorrect Password! Dhyan se password dalein (Space wagera na ho)."); 
+                alert("❌ Incorrect Password!"); 
+                document.getElementById("passInput").value = "";
             }
         }
 
